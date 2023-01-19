@@ -1,0 +1,17 @@
+checks:
+  test1:
+    retries: 3
+    interval: 10
+    path: "./test1.sh"
+    args: "-a test -b foo"
+    name: "test1"
+  test2:
+    retries: 3
+    interval: 5
+    path: "./test2.sh"
+    args: "-a test -b foo"
+    name: "test2"
+
+callhome:
+  url: "http://localhost:8080/callhome"
+  token: "foo"
