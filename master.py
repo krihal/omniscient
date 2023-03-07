@@ -5,8 +5,19 @@ app = Flask(__name__)
 results = {}
 
 
+@app.route("/config", methods=["GET"])
+def config_get():
+    try:
+        with open("worker.yaml") as fd:
+            data = fd.read()
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"{e}"})
+
+    return jsonify({"status": "ok", "yaml": data})
+
+
 @app.route("/callhome", methods=["POST"])
-def post():
+def callhome_post():
     global results
 
     result = request.get_json()

@@ -1,16 +1,16 @@
 checks:
   test1:
     retries: 3
-    interval: 10
-    path: "./test1.sh"
-    args: "-a test -b foo"
-    name: "test1"
+    interval: 1
+    path: "./checks/test1.sh"
+    args: ""
+    name: "Check all docker containers"
   test2:
     retries: 3
-    interval: 5
-    path: "./test2.sh"
-    args: "-a test -b foo"
-    name: "test2"
+    interval: 1
+    path: "./checks/test2.sh"
+    args: ""
+    name: "Check RADIUS port auth"
 
 callhome:
   url: "http://localhost:8080/callhome"

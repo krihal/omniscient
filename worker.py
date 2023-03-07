@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -28,9 +29,7 @@ class Check():
     def __start(self):
         fail = True
         for retry in range(self.__retries):
-            print(f"Retry {retry}")
             res = subprocess.run(self.__process, shell=True)
-
             if res.returncode == 0:
                 fail = False
                 break
@@ -42,12 +41,15 @@ class Check():
                 f"Check {self.__name} failed after {self.__retries} retries")
 
 
-def read_config(configfile="worker.yaml"):
-    with open(configfile) as fd:
-        try:
-            config = yaml.safe_load(fd)
-        except yaml.YAMLError as e:
-            print(e)
+def read_config(url):
+    res = requests.get(url)
+
+    try:
+        config = yaml.safe_load(res.json()["yaml"])
+    except yaml.YAMLError as e:
+        print(e)
+    except yaml.parser.ParserError as e:
+        print(e)
 
     return config
 
@@ -63,8 +65,6 @@ def callhome(result):
 
 
 def check_error(event):
-    print("Job failed: " + event.job_id)
-
     result = {
         "hostname": os.uname().nodename,
         "timestamp": str(datetime.now(timezone.utc)),
@@ -76,8 +76,6 @@ def check_error(event):
 
 
 def check_success(event):
-    print("Job finished: " + event.job_id)
-
     result = {
         "hostname": os.uname().nodename,
         "timestamp": str(datetime.now(timezone.utc)),
@@ -102,9 +100,25 @@ def start_checks(config):
     workers_scheduler.start()
 
 
+def stop_checks():
+    for job in workers_scheduler.get_jobs():
+        workers_scheduler.delete_job(job)
+
+
 if __name__ == "__main__":
-    config = read_config()
-    start_checks(config)
+    if len(sys.argv) != 2:
+        print(f"{sys.argv[0]} <Configuration URL>")
+        sys.exit(1)
+
+    old_config = {}
 
     while True:
+        config = read_config(sys.argv[1])
+
+        if config != old_config:
+            stop_checks()
+            start_checks(config)
+
+            old_config = config.copy()
+
         time.sleep(1)

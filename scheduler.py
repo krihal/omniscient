@@ -27,6 +27,7 @@ class Scheduler(object):
         self.started = False
         self.job_id = 0
         self.jobstore = dict()
+        self.jobs = []
 
     def __lock(self):
         try:
@@ -89,9 +90,15 @@ class Scheduler(object):
             self.job_id += 1
             kwargs["job_id"] = str(self.job_id)
         else:
+            job_id = job_id.replace("-", "_")
+            job_id = job_id.replace(".", "_")
+            job_id = job_id.replace(":", "_")
+            job_id = job_id.replace(" ", "_")
+
             if job_id in self.jobstore:
                 raise JobError("Job already exists")
             kwargs["job_id"] = str(job_id)
+
         kwargs["func"] = func
         kwargs["maxruns"] = maxruns + 1
         job_id = kwargs["job_id"]
@@ -107,7 +114,7 @@ class Scheduler(object):
                                  next_run_time=starttime,
                                  kwargs=kwargs)
 
-        return self.job_id
+        return job_id
 
     def add_error_listener(self, func):
         self.__scheduler.add_listener(func, EVENT_JOB_ERROR)
