@@ -8,6 +8,10 @@ from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import utc
 
+from log import get_logger
+
+log = get_logger()
+
 
 class JobError(Exception):
     def __init__(self, message):
@@ -56,7 +60,7 @@ class Scheduler(object):
         if "maxruns" in kwargs:
             if self.jobstore[job_id]["nr_runs"] >= kwargs["maxruns"]:
                 if kwargs["maxruns"] != 0:
-                    print(f"Reached max runs, removing job {job_id}.")
+                    log.info(f"Reached max runs, removing job {job_id}.")
                     self.__scheduler.remove_job(job_id)
             del kwargs["maxruns"]
         del kwargs["job_id"]
@@ -66,16 +70,16 @@ class Scheduler(object):
 
     def start(self):
         if not self.__lock():
-            print("Could not acquire lock")
+            log.error("Could not acquire lock")
             return None
 
         if self.started:
-            print("Scheduler already started")
+            log.error("Scheduler already started")
             return None
 
         self.started = True
 
-        print("Starting scheduler")
+        log.info("Starting scheduler")
 
         return self.__scheduler.start()
 
@@ -84,7 +88,7 @@ class Scheduler(object):
 
     def add(self, func, job_id="", comment="", timeout=120,
             interval=60, maxruns=1, starttime=None, **kwargs):
-        print(f"Scheduling recurrent job {job_id}")
+        log.info(f"Scheduling recurrent job {job_id}")
 
         if job_id == "":
             self.job_id += 1
@@ -125,7 +129,7 @@ class Scheduler(object):
     def delete_job(self, job_id):
         self.__scheduler.remove_job(job_id)
         del self.jobstore[job_id]
-        print(f"Job {job_id} removed from scheduler.")
+        log.info(f"Job {job_id} removed from scheduler.")
 
     def get_jobs(self):
         jobs = list()

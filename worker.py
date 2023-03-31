@@ -9,7 +9,9 @@ import requests
 import yaml
 
 import scheduler
+from log import get_logger
 
+log = get_logger()
 workers_scheduler = scheduler.Scheduler()
 config = {}
 
@@ -32,15 +34,18 @@ class Check():
     def __download(self):
         check = [self.__config["check"]][0]
         filename = "scripts/" + check
+        url = sys.argv[1] + "/checks/" + check
 
         if not os.path.exists(check):
             try:
-                res = requests.get(sys.argv[1] + "/checks/" + check)
+                res = requests.get(url)
                 with open(filename, "wb") as fd:
                     fd.write(res.content)
                 os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+            except requests.exceptions.ConnectionError:
+                log.error("Failed to download check from " + url)
             except Exception as e:
-                print("Failed to write new check: " + e)
+                log.error("Failed to write new check: " + e)
 
     def __start(self):
         fail = True
@@ -60,26 +65,32 @@ class Check():
 
 
 def read_config(url):
-    res = requests.get(url)
+    config = {}
 
     try:
+        res = requests.get(url)
         config = yaml.safe_load(res.json()["yaml"])
     except yaml.YAMLError as e:
-        print(e)
+        log.error("Got exception: " + e)
     except yaml.parser.ParserError as e:
-        print(e)
+        log.error("Failed to parse YAML: " + e)
+    except requests.exceptions.ConnectionError:
+        log.error("Could not reach endpoint " + url)
 
     return config
 
 
 def callhome(result):
+    if "callhome" not in config:
+        log.error("Failed to call home")
+        return
+
     url = config["callhome"]["url"]
     token = config["callhome"]["token"]
-
     try:
         requests.post(url, json=result)
     except Exception as e:
-        print(f"Failed to post result to {url}: {e}")
+        log.error(f"Failed to post result to {url}: {e}")
 
 
 def check_error(event):
@@ -141,13 +152,18 @@ def stop_checks():
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print(f"{sys.argv[0]} <Configuration URL>")
+        log.info(f"{sys.argv[0]} <Configuration URL>")
         sys.exit(1)
 
     old_config = {}
+    endpoint = sys.argv[1] + "/config"
 
     while True:
-        config = read_config(sys.argv[1] + "/config")
+        config = read_config(endpoint)
+
+        if config == {}:
+            time.sleep(5)
+            continue
 
         if config != old_config:
             stop_checks()
