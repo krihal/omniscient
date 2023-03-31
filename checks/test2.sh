@@ -1,5 +1,5 @@
 #!/bin/sh
 
-echo "bar"
+echo $((1 + $RANDOM % 1000))
 
 exit 0

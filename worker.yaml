@@ -1,14 +1,14 @@
 checks:
   test1:
     retries: 3
-    interval: 1
-    path: "./checks/test1.sh"
+    interval: 5
+    check: "test1.sh"
     args: ""
     name: "Check all docker containers"
   test2:
     retries: 3
-    interval: 1
-    path: "./checks/test2.sh"
+    interval: 5
+    check: "test2.sh"
     args: ""
     name: "Check RADIUS port auth"
 

@@ -1,8 +1,17 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, request
+from influxdb import InfluxDBClient
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="checks")
 
 results = {}
+client = InfluxDBClient(host="localhost", port=8086)
+client.switch_database("testdb")
+
+
+def influx_write(result):
+    if client.write_points(result):
+        return True
+    return False
 
 
 @app.route("/config", methods=["GET"])
@@ -21,15 +30,11 @@ def callhome_post():
     global results
 
     result = request.get_json()
-    hostname = result["hostname"]
-    results[hostname] = result
 
-    return jsonify({"status": "ok"})
+    if influx_write(result):
+        return jsonify({"status": "ok"})
 
-
-@app.route("/", methods=["GET"])
-def get():
-    return render_template("index.html", results=results)
+    return jsonify({"status": "error"}, 400)
 
 
 if __name__ == '__main__':

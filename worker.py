@@ -1,4 +1,5 @@
 import os
+import stat
 import subprocess
 import sys
 import time
@@ -19,26 +20,43 @@ class CheckError(Exception):
 
 class Check():
     def __init__(self, config):
+        self.__config = config
         self.__name = config["name"]
         self.__retries = config["retries"]
-        self.__process = [config["path"]]
+        self.__process = ["./scripts/" + config["check"]]
         self.__process.extend(config["args"].split(" "))
 
-        self.__start()
+        self.__download()
+        self.result = self.__start()
+
+    def __download(self):
+        check = [self.__config["check"]][0]
+        filename = "scripts/" + check
+
+        if not os.path.exists(check):
+            try:
+                res = requests.get(sys.argv[1] + "/checks/" + check)
+                with open(filename, "wb") as fd:
+                    fd.write(res.content)
+                os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+            except Exception as e:
+                print("Failed to write new check: " + e)
 
     def __start(self):
         fail = True
         for retry in range(self.__retries):
-            res = subprocess.run(self.__process, shell=True)
+            res = subprocess.run(
+                self.__process, shell=True, capture_output=True)
             if res.returncode == 0:
                 fail = False
                 break
-
             time.sleep(3)
 
         if fail:
             raise CheckError(
                 f"Check {self.__name} failed after {self.__retries} retries")
+
+        return res.stdout
 
 
 def read_config(url):
@@ -65,23 +83,39 @@ def callhome(result):
 
 
 def check_error(event):
-    result = {
-        "hostname": os.uname().nodename,
-        "timestamp": str(datetime.now(timezone.utc)),
-        "check": event.job_id,
-        "result": "fail"
-    }
+    result = [{
+        "measurement": event.job_id,
+        "tags": {
+            "hostname": os.uname().nodename
+        },
+        "fields": {
+            "success": False
+        }
+    }]
 
     callhome(result)
 
 
 def check_success(event):
-    result = {
-        "hostname": os.uname().nodename,
-        "timestamp": str(datetime.now(timezone.utc)),
-        "check": event.job_id,
-        "result": "pass"
-    }
+    resultdata = event.retval.result.decode().rstrip()
+
+    try:
+        float(resultdata)
+    except ValueError:
+        pass
+    else:
+        resultdata = float(resultdata)
+
+    result = [{
+        "measurement": event.job_id,
+        "tags": {
+            "hostname": os.uname().nodename
+        },
+        "fields": {
+            "success": True,
+            "result": resultdata
+        }
+    }]
 
     callhome(result)
 
@@ -113,7 +147,7 @@ if __name__ == "__main__":
     old_config = {}
 
     while True:
-        config = read_config(sys.argv[1])
+        config = read_config(sys.argv[1] + "/config")
 
         if config != old_config:
             stop_checks()
