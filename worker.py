@@ -1,8 +1,10 @@
+import getpass
 import os
 import stat
 import subprocess
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
 
 import requests
@@ -64,6 +66,14 @@ class Check():
         return res.stdout
 
 
+def get_uuid():
+    username = getpass.getuser()
+    node = hex(uuid.getnode())
+    urn = 'urn:node:%s:user:%s' % (node, username)
+
+    return str(uuid.uuid3(uuid.NAMESPACE_DNS, urn))
+
+
 def read_config(url):
     config = {}
 
@@ -97,7 +107,7 @@ def check_error(event):
     result = [{
         "measurement": event.job_id,
         "tags": {
-            "hostname": os.uname().nodename
+            "uuid": get_uuid()
         },
         "fields": {
             "success": False
@@ -120,7 +130,7 @@ def check_success(event):
     result = [{
         "measurement": event.job_id,
         "tags": {
-            "hostname": os.uname().nodename
+            "uuid": get_uuid()
         },
         "fields": {
             "success": True,
