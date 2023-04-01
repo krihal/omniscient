@@ -1,5 +1,5 @@
 #!/bin/sh
 
-echo $((1 + $RANDOM % 100000))
+echo `ping -c1 ping.sunet.se | tail -1 | awk -F '/' '{print $5}'`
 
 exit 0
