@@ -15,7 +15,7 @@ def influx_write(result):
     return False
 
 
-def read_config(filename="config.json"):
+def get_config(filename="config.json"):
     with open(filename) as fd:
         config = json.load(fd)
     return config
@@ -68,8 +68,7 @@ def config_get():
     if "uuid" not in args:
         return jsonify({"status": "error", "message": ""}), 400
 
-    config = read_config()
-
+    config = get_config()
     data = get_tests(args["uuid"], config)
 
     if data:
@@ -81,14 +80,15 @@ def config_get():
 @app.route("/callhome", methods=["POST"])
 def callhome_post():
     args = request.args
+    config = get_config()
 
     if "uuid" not in args:
         return jsonify({"status": "error", "message": ""}), 400
 
     uuid = args["uuid"]
-    alias = get_alias(uuid, read_config())
+    alias = get_alias(uuid, config)
 
-    if not get_groups(uuid, read_config()):
+    if not get_groups(uuid, config):
         return jsonify({"status": "error", "message": ""}), 400
 
     results = request.get_json()
