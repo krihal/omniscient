@@ -1,5 +1,8 @@
+import getopt
 import getpass
+import logging
 import os
+import signal
 import stat
 import subprocess
 import sys
@@ -7,6 +10,7 @@ import time
 import uuid
 
 import requests
+from daemonize import Daemonize
 
 import scheduler
 from log import get_logger
@@ -14,6 +18,7 @@ from log import get_logger
 log = get_logger()
 workers_scheduler = scheduler.Scheduler()
 config = {}
+url = ""
 
 
 class CheckError(Exception):
@@ -34,11 +39,11 @@ class Check():
     def __download(self):
         check = [self.__config["check"]][0]
         filename = "scripts/" + check
-        url = sys.argv[1] + "/checks/" + check
+        downloadurl = url + "/checks/" + check
 
         if not os.path.exists(check):
             try:
-                res = requests.get(url)
+                res = requests.get(downloadurl)
                 with open(filename, "wb") as fd:
                     fd.write(res.content)
                 os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
@@ -88,8 +93,6 @@ def read_config(url):
 
 
 def callhome(result):
-    url = sys.argv[1]
-
     try:
         requests.post(url + "/callhome?uuid=" + get_uuid(), json=result)
     except Exception as e:
@@ -106,6 +109,9 @@ def check_error(event):
             "success": False
         }
     }]
+
+    log.debug(f"Test failed, sending data to {url}:")
+    log.debug(result)
 
     callhome(result)
 
@@ -131,6 +137,9 @@ def check_success(event):
         }
     }]
 
+    log.debug(f"Test was successful, sending data to {url}:")
+    log.debug(result)
+
     callhome(result)
 
 
@@ -138,6 +147,8 @@ def start_checks(config):
     for test in config:
         interval = test["interval"]
         name = test["name"]
+
+        log.debug(f"Starting new job {name} with interval {interval}")
 
         workers_scheduler.add(
             Check, name, interval=interval, maxruns=-1, config=test)
@@ -149,21 +160,19 @@ def start_checks(config):
 
 def stop_checks():
     for job in workers_scheduler.get_jobs():
+        log.debug(f"Stopping job {job}")
         workers_scheduler.delete_job(job)
 
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        log.info(f"{sys.argv[0]} <Configuration URL>")
-        sys.exit(1)
-
+def main():
     old_config = {}
-    endpoint = sys.argv[1] + "/config"
+    endpoint = url + "/config"
 
     while True:
         config = read_config(endpoint)
 
         if config == {}:
+            log.debug("Didn't receive a configuration")
             time.sleep(5)
             continue
 
@@ -174,3 +183,64 @@ if __name__ == "__main__":
             old_config = config.copy()
 
         time.sleep(1)
+
+
+def kill(pidfile):
+    try:
+        with open(pidfile) as fd:
+            pid = int(fd.read())
+            log.info(f"Killing daemon with pid {pid}")
+            os.kill(pid, signal.SIGTERM)
+    except Exception as e:
+        log.error(f"Failed to kill daemon: {e}")
+
+
+def usage(err):
+    name = sys.argv[0]
+
+    if err != "":
+        print(f"{name}: {err}")
+        print("")
+
+    print(f"{name} -p <pidfile> -d -F")
+    print("  -u              URL to server")
+    print("  -p <pidfile>    Path to pid file")
+    print("  -d              Enable debug")
+    print("  -f              Stay in foreground")
+    print("  -z              Kill running instance")
+
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    foreground = False
+    pidfile = "/tmp/worker.pid"
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "p:dfzu:")
+    except getopt.GetoptError as e:
+        usage(err=e)
+
+    for opt, arg in opts:
+        if opt == "-d":
+            log.setLevel(logging.DEBUG)
+        elif opt == "-p":
+            pidfile = arg
+        elif opt == "-f":
+            foreground = True
+        elif opt == "-u":
+            url = arg
+        elif opt == "-z":
+            kill(pidfile)
+        else:
+            usage()
+
+    if "http" not in url:
+        usage()
+
+    daemon = Daemonize(app=__name__, pid=pidfile, action=main,
+                       logger=log,
+                       foreground=foreground,
+                       verbose=True,
+                       chdir=os.getcwd())
+    daemon.start()

@@ -74,7 +74,7 @@ class Scheduler(object):
             return None
 
         if self.started:
-            log.error("Scheduler already started")
+            log.debug("Scheduler already started")
             return None
 
         self.started = True
@@ -84,6 +84,8 @@ class Scheduler(object):
         return self.__scheduler.start()
 
     def stop(self):
+        if self.started:
+            self.started = False
         return self.__scheduler.shutdown()
 
     def add(self, func, job_id="", comment="", timeout=120,
