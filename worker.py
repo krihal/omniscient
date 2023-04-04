@@ -195,17 +195,21 @@ def kill(pidfile):
         log.error(f"Failed to kill daemon: {e}")
 
 
-def usage(err):
+def usage(err=""):
     name = sys.argv[0]
 
     if err != "":
         print(f"{name}: {err}")
         print("")
+        sys.exit(0)
 
+    print()
+    print(f"Client UUID: {get_uuid()}")
+    print()
     print(f"{name} -p <pidfile> -d -F")
     print("  -u              URL to server")
-    print("  -p <pidfile>    Path to pid file")
     print("  -d              Enable debug")
+    print("  -p <pidfile>    Path to pid file")
     print("  -f              Stay in foreground")
     print("  -z              Kill running instance")
 
@@ -217,7 +221,7 @@ if __name__ == "__main__":
     pidfile = "/tmp/worker.pid"
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "p:dfzu:")
+        opts, args = getopt.getopt(sys.argv[1:], "p:dfzu:h")
     except getopt.GetoptError as e:
         usage(err=e)
 
@@ -232,6 +236,8 @@ if __name__ == "__main__":
             url = arg
         elif opt == "-z":
             kill(pidfile)
+        elif "-h":
+            usage()
         else:
             usage()
 

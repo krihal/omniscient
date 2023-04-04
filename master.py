@@ -42,6 +42,25 @@ def get_tests(uuid, config):
     return tests
 
 
+def get_alias(uuid, config):
+    if "clients" not in config:
+        return uuid
+
+    for client in config["clients"]:
+        if client != uuid:
+            continue
+        if "alias" not in config["clients"][client]:
+            return uuid
+        alias = config["clients"][client]["alias"]
+
+        if alias is None:
+            return uuid
+        if alias == "":
+            return uuid
+
+    return uuid
+
+
 @app.route("/config", methods=["GET"])
 def config_get():
     args = request.args
@@ -66,12 +85,18 @@ def callhome_post():
     if "uuid" not in args:
         return jsonify({"status": "error", "message": ""}), 400
 
-    if not get_groups(args["uuid"], read_config()):
+    uuid = args["uuid"]
+    alias = get_alias(uuid, read_config())
+
+    if not get_groups(uuid, read_config()):
         return jsonify({"status": "error", "message": ""}), 400
 
-    result = request.get_json()
+    results = request.get_json()
 
-    if influx_write(result):
+    for result in results:
+        result["tags"]["uuid"] = alias
+
+    if influx_write(results):
         return jsonify({"status": "ok"})
 
     return jsonify({"status": "error"}, 400)
