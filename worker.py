@@ -5,10 +5,8 @@ import subprocess
 import sys
 import time
 import uuid
-from datetime import datetime, timezone
 
 import requests
-import yaml
 
 import scheduler
 from log import get_logger
@@ -70,7 +68,6 @@ def get_uuid():
     username = getpass.getuser()
     node = hex(uuid.getnode())
     urn = 'urn:node:%s:user:%s' % (node, username)
-
     return str(uuid.uuid3(uuid.NAMESPACE_DNS, urn))
 
 
@@ -78,12 +75,12 @@ def read_config(url):
     config = {}
 
     try:
-        res = requests.get(url)
-        config = yaml.safe_load(res.json()["yaml"])
-    except yaml.YAMLError as e:
-        log.error("Got exception: " + e)
-    except yaml.parser.ParserError as e:
-        log.error("Failed to parse YAML: " + e)
+        res = requests.get(url + "?uuid=" + get_uuid())
+
+        if "data" in res.json():
+            config = res.json()["data"]
+        elif "error" in res.json():
+            log.error("Configuration not found for client")
     except requests.exceptions.ConnectionError:
         log.error("Could not reach endpoint " + url)
 
@@ -91,14 +88,10 @@ def read_config(url):
 
 
 def callhome(result):
-    if "callhome" not in config:
-        log.error("Failed to call home")
-        return
+    url = sys.argv[1]
 
-    url = config["callhome"]["url"]
-    token = config["callhome"]["token"]
     try:
-        requests.post(url, json=result)
+        requests.post(url + "/callhome?uuid=" + get_uuid(), json=result)
     except Exception as e:
         log.error(f"Failed to post result to {url}: {e}")
 
@@ -142,17 +135,16 @@ def check_success(event):
 
 
 def start_checks(config):
-    for check in config["checks"]:
-        check_config = config["checks"][check]
-        interval = check_config["interval"]
-        name = check_config["name"]
+    for test in config:
+        interval = test["interval"]
+        name = test["name"]
 
         workers_scheduler.add(
-            Check, name, interval=interval, maxruns=-1, config=check_config)
+            Check, name, interval=interval, maxruns=-1, config=test)
 
-    workers_scheduler.add_error_listener(check_error)
-    workers_scheduler.add_success_listener(check_success)
-    workers_scheduler.start()
+        workers_scheduler.add_error_listener(check_error)
+        workers_scheduler.add_success_listener(check_success)
+        workers_scheduler.start()
 
 
 def stop_checks():
@@ -176,9 +168,9 @@ if __name__ == "__main__":
             continue
 
         if config != old_config:
+            log.info("Configuration change!")
             stop_checks()
             start_checks(config)
-
             old_config = config.copy()
 
         time.sleep(1)
