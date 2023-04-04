@@ -1,6 +1,7 @@
 import getopt
 import getpass
 import hashlib
+import json
 import logging
 import os
 import signal
@@ -114,9 +115,14 @@ def read_config(url):
 
 def callhome(result):
     try:
-        requests.post(url + "/callhome?uuid=" + get_uuid(), json=result)
+        res = requests.post(url + "/callhome?uuid=" + get_uuid(), json=result)
     except Exception as e:
         log.error(f"Failed to post result to {url}: {e}")
+
+    log.debug("Sent result to server:")
+    indented = json.dumps(result, indent=4)
+    log.debug("\n" + indented)
+    log.debug(f"Server responded with {res.status_code}")
 
 
 def check_error(event):
@@ -129,9 +135,6 @@ def check_error(event):
             "success": False
         }
     }]
-
-    log.debug(f"Test failed, sending data to {url}:")
-    log.debug(result)
 
     callhome(result)
 
@@ -156,9 +159,6 @@ def check_success(event):
             "result": resultdata
         }
     }]
-
-    log.debug(f"Test was successful, sending data to {url}:")
-    log.debug(result)
 
     callhome(result)
 
