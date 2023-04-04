@@ -1,5 +1,6 @@
 import getopt
 import getpass
+import hashlib
 import logging
 import os
 import signal
@@ -30,16 +31,35 @@ class Check():
         self.__config = config
         self.__name = config["name"]
         self.__retries = config["retries"]
-        self.__process = ["./scripts/" + config["check"]]
+        self.__filename = "./scripts/" + config["check"]
+        self.__process = [self.__filename]
         self.__process.extend(config["args"].split(" "))
+        self.__rhash = self.__get_remote_hash()
+        self.__lhash = self.__get_hash()
 
-        self.__download()
+        if self.__lhash is None or self.__lhash != self.__rhash:
+            log.info("File hash differ:")
+            log.info(f"   local={self.__lhash}")
+            log.info(f"  remote={self.__rhash}")
+            self.__download()
+
         self.result = self.__start()
+
+    def __get_remote_hash(self):
+        return self.__config["hash"]
+
+    def __get_hash(self):
+        if not os.path.exists(self.__filename):
+            return None
+        with open(self.__filename, "rb") as fd:
+            return hashlib.sha256(fd.read()).hexdigest()
 
     def __download(self):
         check = [self.__config["check"]][0]
         filename = "scripts/" + check
         downloadurl = url + "/checks/" + check
+
+        log.info(f"Downloading script {filename}")
 
         if not os.path.exists(check):
             try:
@@ -167,6 +187,7 @@ def stop_checks():
 def main():
     old_config = {}
     endpoint = url + "/config"
+    callhome_interval = 30
 
     while True:
         config = read_config(endpoint)
@@ -177,12 +198,22 @@ def main():
             continue
 
         if config != old_config:
+            for test in config:
+                log.info("Scheduling test:")
+                log.info("  Name:     " + test["name"])
+                log.info("  Interval: " + str(test["interval"]))
+                log.info("  Retries:  " + str(test["retries"]))
+                log.info("  Check:    " + test["check"])
+                log.info("")
+
             log.info("Configuration change!")
             stop_checks()
             start_checks(config)
             old_config = config.copy()
 
-        time.sleep(1)
+        log.info(f"Will call home again in {callhome_interval} seconds")
+
+        time.sleep(callhome_interval)
 
 
 def kill(pidfile):

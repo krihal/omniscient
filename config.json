@@ -12,7 +12,7 @@
 	"test1": {
 	    "name": "ping.sunet.se",
 	    "retries": 10,
-	    "interval": 5,
+	    "interval": 1,
 	    "check": "test1.sh",
 	    "args": "",
 	    "groups": ["sunet"]
@@ -20,7 +20,7 @@
 	"test2": {
 	    "name": "test2",
 	    "retries": 5,
-	    "interval": 2,
+	    "interval": 30,
 	    "check": "test2.sh",
 	    "args": "",
 	    "groups": ["sunet"]

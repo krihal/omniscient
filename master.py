@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 from flask import Flask, jsonify, request
@@ -13,6 +14,11 @@ def influx_write(result):
     if client.write_points(result):
         return True
     return False
+
+
+def get_hash(filename):
+    with open("checks/" + filename, "rb") as fd:
+        return hashlib.sha256(fd.read()).hexdigest()
 
 
 def get_config(filename="config.json"):
@@ -37,6 +43,10 @@ def get_tests(uuid, config):
         testgroups = config["tests"][test]["groups"]
         for group in testgroups:
             if group in found:
+                filename = config["tests"][test]["check"]
+                filehash = get_hash(filename)
+                config["tests"][test]["hash"] = filehash
+
                 tests.append(config["tests"][test])
 
     return tests
@@ -64,11 +74,11 @@ def get_alias(uuid, config):
 @app.route("/config", methods=["GET"])
 def config_get():
     args = request.args
+    config = get_config()
 
     if "uuid" not in args:
         return jsonify({"status": "error", "message": ""}), 400
 
-    config = get_config()
     data = get_tests(args["uuid"], config)
 
     if data:
