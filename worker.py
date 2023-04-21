@@ -251,6 +251,7 @@ def usage(err=""):
     print(f"Client UUID: {get_uuid()}")
     print()
     print(f"{name} -p <pidfile> -d -F")
+    print("  -U              Print UUID and quit")
     print("  -u              URL to server")
     print("  -d              Enable debug")
     print("  -p <pidfile>    Path to pid file")
@@ -265,7 +266,7 @@ if __name__ == "__main__":
     pidfile = "/tmp/worker.pid"
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "p:dfzu:h")
+        opts, args = getopt.getopt(sys.argv[1:], "p:dfzu:hU")
     except getopt.GetoptError as e:
         usage(err=e)
 
@@ -280,6 +281,9 @@ if __name__ == "__main__":
             url = arg
         elif opt == "-z":
             kill(pidfile)
+        elif opt == "-U":
+            print(get_uuid())
+            sys.exit(0)
         elif "-h":
             usage()
         else:
