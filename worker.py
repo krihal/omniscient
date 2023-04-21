@@ -32,7 +32,17 @@ class Check():
         self.__config = config
         self.__name = config["name"]
         self.__retries = config["retries"]
-        self.__filename = "./scripts/" + config["check"]
+        self.__scripts_path = "/tmp/scripts/"
+
+        if not os.path.exists(self.__scripts_path):
+            log.debug("Scripts directory missing, creating")
+            os.mkdir(self.__scripts_path)
+        else:
+            log.debug("Scripts directory exists")
+
+        self.__filename = self.__scripts_path + config["check"]
+        log.debug(f"Check filename: {self.__filename}")
+
         self.__process = [self.__filename]
         self.__process.extend(config["args"].split(" "))
         self.__rhash = self.__get_remote_hash()
@@ -41,7 +51,7 @@ class Check():
         if self.__lhash is None or self.__lhash != self.__rhash:
             log.info("File hash differ:")
             log.info(f"   local={self.__lhash}")
-            log.info(f"  remote={self.__rhash}")
+            log.info(f"   remote={self.__rhash}")
             self.__download()
 
         self.result = self.__start()
@@ -57,7 +67,7 @@ class Check():
 
     def __download(self):
         check = [self.__config["check"]][0]
-        filename = "scripts/" + check
+        filename = self.__scripts_path + check
         downloadurl = url + "/checks/" + check
 
         log.info(f"Downloading script {filename}")
@@ -99,9 +109,12 @@ def get_uuid():
 
 def read_config(url):
     config = {}
+    my_uuid = get_uuid()
+
+    log.debug(f"Worker have UUID={my_uuid}")
 
     try:
-        res = requests.get(url + "?uuid=" + get_uuid())
+        res = requests.get(url + "?uuid=" + my_uuid)
 
         if "data" in res.json():
             config = res.json()["data"]
