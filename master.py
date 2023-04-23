@@ -1,13 +1,25 @@
 import hashlib
 import json
+import os
 
 from flask import Flask, jsonify, request
 from influxdb import InfluxDBClient
 
 app = Flask(__name__, static_folder="checks")
 
-client = InfluxDBClient(host="localhost", port=8086)
-client.switch_database("testdb")
+INFLUX_HOST = "influxdb"
+INFLUX_PORT = 8086
+INFLUX_DB = "testdb"
+
+if "INFLUX_HOST" in os.environ:
+    INFLUX_HOST = os.environ["INFLUX_HOST"]
+if "INFLUX_PORT" in os.environ:
+    INFLUX_PORT = os.environ["INFLUX_PORT"]
+if "INFLUX_DB" in os.environ:
+    INFLUX_DB = os.environ["INFLUX_DB"]
+
+client = InfluxDBClient(host=INFLUX_HOST, port=INFLUX_PORT)
+client.switch_database(INFLUX_DB)
 
 
 def influx_write(result):
@@ -113,4 +125,4 @@ def callhome_post():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(debug=True, host="0.0.0.0", port=8080)
