@@ -22,5 +22,5 @@ COPY ./docker-master/start_master.sh /usr/local/bin/start_master.sh
 COPY requirements.txt /master/requirements.txt
 COPY master.py /master/master.py
 COPY config.json /master/config.json
-
+COPY checks /master/checks
 ENTRYPOINT supervisord -c /etc/supervisor/supervisord.conf

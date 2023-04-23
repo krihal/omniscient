@@ -37,6 +37,7 @@ services:
     depends_on:
       - influxdb
     environment:
-      - INFLUX_HOST="influxdb"
+      - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
+      - INFLUX_DB=testdb
     

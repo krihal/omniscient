@@ -129,13 +129,12 @@ def read_config(url):
 def callhome(result):
     try:
         res = requests.post(url + "/callhome?uuid=" + get_uuid(), json=result)
+        log.debug("Sent result to server:")
+        indented = json.dumps(result, indent=4)
+        log.debug("\n" + indented)
+        log.debug(f"Server responded with {res.status_code}")
     except Exception as e:
         log.error(f"Failed to post result to {url}: {e}")
-
-    log.debug("Sent result to server:")
-    indented = json.dumps(result, indent=4)
-    log.debug("\n" + indented)
-    log.debug(f"Server responded with {res.status_code}")
 
 
 def check_error(event):
