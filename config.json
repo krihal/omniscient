@@ -5,7 +5,7 @@
 	}
     },
     "groups": {
-	"sunet": ["12fda09b-d54d-3d1c-9e1e-e54d4ac50a42"],
+	"sunet": ["*"],
 	"su": ["d795880c-cad3-34c2-874c-000000000000"]
     },
     "tests": {

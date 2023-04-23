@@ -44,6 +44,9 @@ def get_groups(uuid, config):
     for group in config["groups"]:
         if uuid in config["groups"][group]:
             found.append(group)
+        if "*" in config["groups"][group]:
+            found.append(group)
+
     return found
 
 
@@ -89,14 +92,14 @@ def config_get():
     config = get_config()
 
     if "uuid" not in args:
-        return jsonify({"status": "error", "message": ""}), 400
+        return jsonify({"status": "error", "message": "Missing argument uuid"}), 400
 
     data = get_tests(args["uuid"], config)
 
     if data:
         return jsonify({"status": "ok", "data": data})
 
-    return jsonify({"status": "error", "message": ""})
+    return jsonify({"status": "error", "message": "Unknown client"})
 
 
 @app.route("/callhome", methods=["POST"])
