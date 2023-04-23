@@ -1,5 +1,5 @@
-#!/bin/sh
+#!/bin/bash
 
-echo $((1 + $RANDOM % 1000))
+shuf -i 1-1000 -n 1
 
 exit 0

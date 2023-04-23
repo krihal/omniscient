@@ -15,6 +15,7 @@ RUN apt install -y \
     supervisor \
     emacs-nox \
     && apt-get clean
+
 RUN mkdir /worker
 
 COPY ./docker-worker/supervisord.conf /etc/supervisor/supervisord.conf
@@ -23,5 +24,7 @@ COPY requirements.txt /worker/requirements.txt
 COPY worker.py /worker/worker.py
 COPY scheduler.py /worker/scheduler.py
 COPY log.py /worker/log.py
+
+RUN pip3 install -r /worker/requirements.txt
 
 ENTRYPOINT supervisord -c /etc/supervisor/supervisord.conf

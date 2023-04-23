@@ -95,7 +95,7 @@ class Check():
 
         if fail:
             raise CheckError(
-                f"Check {self.__name} failed after {self.__retries} retries")
+                f"Check {self.__name} failed after {self.__retries} retries: {res.stdout}, {res.stderr}")
 
         return res.stdout
 
