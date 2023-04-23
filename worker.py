@@ -41,6 +41,7 @@ class Check():
             log.debug("Scripts directory exists")
 
         self.__filename = self.__scripts_path + config["check"]
+
         log.debug(f"Check filename: {self.__filename}")
 
         self.__process = [self.__filename]
@@ -86,8 +87,9 @@ class Check():
     def __start(self):
         fail = True
         for retry in range(self.__retries):
+            print(self.__process)
             res = subprocess.run(
-                self.__process, shell=True, capture_output=True)
+                self.__process, shell=False, capture_output=True)
             if res.returncode == 0:
                 fail = False
                 break
