@@ -1,18 +1,18 @@
 {
     "clients": {
-	"d795880c-cad3-34c2-874c-4e239c3539f5": {
+	"12fda09b-d54d-3d1c-9e1e-e54d4ac50a42": {
 	    "alias": "bar"
 	}
     },
     "groups": {
-	"sunet": ["d795880c-cad3-34c2-874c-4e239c3539f5"],
+	"sunet": ["12fda09b-d54d-3d1c-9e1e-e54d4ac50a42"],
 	"su": ["d795880c-cad3-34c2-874c-000000000000"]
     },
     "tests": {
 	"test1": {
 	    "name": "ping.sunet.se",
 	    "retries": 10,
-	    "interval": 1,
+	    "interval": 3,
 	    "check": "test1.sh",
 	    "args": "",
 	    "groups": ["sunet"]
