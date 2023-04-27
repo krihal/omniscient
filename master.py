@@ -30,7 +30,17 @@ def influx_write(result):
 
 def get_hash(filename):
     with open("checks/" + filename, "rb") as fd:
-        return hashlib.sha256(fd.read()).hexdigest()
+        data = fd.read()
+
+    lines = data.split(b"\n")
+    if len(lines) > 3:
+        if lines[0].rstrip() == b"--- SIGNATURE START ---" and lines[2].rstrip() == b"--- SIGNATURE END ---":
+            lines = lines[3:]
+
+    data = b"\n".join(lines)
+    data = data.decode()
+
+    return hashlib.sha256(data.encode()).hexdigest()
 
 
 def get_config(filename="config.json"):
