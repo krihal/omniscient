@@ -12,7 +12,7 @@
 	"test1": {
 	    "name": "ping.sunet.se",
 	    "retries": 3,
-	    "interval": 5,
+	    "interval": 30,
 	    "check": "ping.sh",
 	    "args": "ping.sunet.se",
 	    "groups": ["sunet"]
@@ -20,7 +20,7 @@
 	"test2": {
 	    "name": "random number",
 	    "retries": 3,
-	    "interval": 10,
+	    "interval": 30,
 	    "check": "random.sh",
 	    "args": "",
 	    "groups": ["sunet"]
@@ -29,7 +29,7 @@
 	"test3": {
 	    "name": "sunet https",
 	    "retries": 3,
-	    "interval": 15,
+	    "interval": 30,
 	    "check": "https.sh",
 	    "args": "",
 	    "groups": ["sunet"]
@@ -37,10 +37,34 @@
 	"test4": {
 	    "name": "diskspace",
 	    "retries": 3,
-	    "interval": 20,
+	    "interval": 30,
 	    "check": "diskspace.sh",
 	    "args": "",
+	    "groups": ["sunet"]	
+	},
+	"test5": {
+	    "name": "reseponse time",
+	    "retries": 3,
+	    "interval": 30,
+	    "check": "responsetime.sh",
+	    "args": "",
 	    "groups": ["sunet"]
-	}	
+	},
+	"test6": {
+	    "name": "reseponse time on google",
+	    "retries": 3,
+	    "interval": 30,
+	    "check": "responsetimegoogle.sh",
+	    "args": "",
+	    "groups": ["sunet"]
+	},
+	"test7": {
+	    "name": "update",
+	    "retries": 3,
+	    "interval": 300,
+	    "check": "update.sh",
+	    "args": "",
+	    "groups": ["sunet"]
+	}
     }
 }

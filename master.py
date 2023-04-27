@@ -7,7 +7,7 @@ from influxdb import InfluxDBClient
 
 app = Flask(__name__, static_folder="checks")
 
-INFLUX_HOST = "influxdb"
+INFLUX_HOST = "localhost"
 INFLUX_PORT = 8086
 INFLUX_DB = "testdb"
 

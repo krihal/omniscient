@@ -14,8 +14,8 @@ import uuid
 import requests
 from daemonize import Daemonize
 
-import scheduler
-from log import get_logger
+from omniscient import scheduler
+from omniscient.log import get_logger
 
 log = get_logger()
 workers_scheduler = scheduler.Scheduler()
@@ -44,7 +44,10 @@ class Check():
 
         log.debug(f"Check filename: {self.__filename}")
 
-        self.__process = [self.__filename]
+        if self.__filename is not None:
+            self.__process = [self.__filename]
+        else:
+            self.__process = []
         self.__process.extend(config["args"].split(" "))
         self.__rhash = self.__get_remote_hash()
         self.__lhash = self.__get_hash()
@@ -53,8 +56,13 @@ class Check():
             log.info("File hash differ:")
             log.info(f"   local={self.__lhash}")
             log.info(f"   remote={self.__rhash}")
-            self.__download()
 
+            if self.__download():
+                logger.info("Downloaded new check")
+            else:
+                logger.info("Failed to download new check")
+                self.__filename = None
+                
         self.result = self.__start()
 
     def __get_remote_hash(self):
@@ -76,18 +84,26 @@ class Check():
         if not os.path.exists(check):
             try:
                 res = requests.get(downloadurl)
-                with open(filename, "wb") as fd:
-                    fd.write(res.content)
+                data = res.content
+
+                if not verify_file(res.content, filename, "certs/server_pub.crt"):
+                    logger.error("File signature could not be verified")
+                    return False
+                
                 os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
             except requests.exceptions.ConnectionError:
                 log.error("Failed to download check from " + url)
             except Exception as e:
                 log.error("Failed to write new check: " + e)
 
+        return True
+                
     def __start(self):
+        if self.__process == []:
+            raise CheckError("No process to run!")
+        
         fail = True
         for retry in range(self.__retries):
-            print(self.__process)
             res = subprocess.run(
                 self.__process, shell=False, capture_output=True)
             if res.returncode == 0:

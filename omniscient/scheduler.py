@@ -8,7 +8,7 @@ from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import utc
 
-from log import get_logger
+from omniscient.log import get_logger
 
 log = get_logger()
 
