@@ -113,7 +113,8 @@ def start_checks(config):
 
         workers_scheduler.add_error_listener(check_error)
         workers_scheduler.add_success_listener(check_success)
-        workers_scheduler.start()
+
+    workers_scheduler.start()
 
 
 def stop_checks():
@@ -217,9 +218,12 @@ if __name__ == "__main__":
     if "http" not in url:
         usage()
 
-    daemon = Daemonize(app=__name__, pid=pidfile, action=main,
-                       logger=log,
-                       foreground=foreground,
-                       verbose=True,
-                       chdir=os.getcwd())
-    daemon.start()
+    if foreground:
+        main()
+    else:
+        daemon = Daemonize(app=__name__, pid=pidfile, action=main,
+                           logger=log,
+                           foreground=foreground,
+                           verbose=True,
+                           chdir=os.getcwd())
+        daemon.start()
