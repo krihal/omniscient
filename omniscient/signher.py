@@ -1,4 +1,3 @@
-
 import sys
 
 from OpenSSL import crypto
@@ -13,15 +12,17 @@ def ssl_sign_file(data, cert_path, key_path):
         print("Failed to sign file:")
         print(e)
         sys.exit(1)
-        
+
     return signature
 
 def sign_file(file_path, cert_path, key_path):
     with open(file_path, "rb") as fd:
-        lines = fd.readlines()
+        lines = fd.read()
+
+    lines = lines.split(b"\n")
 
     if len(lines) > 3:
-        if lines[0] == "--- SIGNATURE START ---" and lines[2] == "--- SIGNATURE END ---":
+        if lines[0].rstrip() == b"--- SIGNATURE START ---" and lines[2].rstrip() == b"--- SIGNATURE END ---":
             lines = lines[3:]
 
     data = b"".join(lines)
@@ -33,23 +34,23 @@ def sign_file(file_path, cert_path, key_path):
     lines.insert(2, b"--- SIGNATURE END ---\n")
 
     data = b"".join(lines)
-    
+
     with open(file_path, "w") as fd:
         fd.write(data.decode())
 
 def verify_file(data, file_path, cert_path):
-    lines = data.split("\n")
-    
+    lines = data.split(b"\n")
+
     if len(lines) < 3:
         print("File is not signed")
         sys.exit(1)
 
-    if lines[0] != b"--- SIGNATURE START ---\n" or lines[2] != b"--- SIGNATURE END ---\n":
+    if lines[0] != b"--- SIGNATURE START ---" or lines[2] != b"--- SIGNATURE END ---":
         print("File is not signed")
         sys.exit(1)
 
     signature = lines[1].strip().decode()
-    data = b"".join(lines[3:])
+    data = b"\n".join(lines[3:])
 
     try:
         cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_path).read())

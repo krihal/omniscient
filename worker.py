@@ -16,6 +16,7 @@ from daemonize import Daemonize
 
 from omniscient import scheduler
 from omniscient.log import get_logger
+from omniscient.signher import verify_file
 
 log = get_logger()
 workers_scheduler = scheduler.Scheduler()
@@ -58,9 +59,9 @@ class Check():
             log.info(f"   remote={self.__rhash}")
 
             if self.__download():
-                logger.info("Downloaded new check")
+                log.info("Downloaded new check")
             else:
-                logger.info("Failed to download new check")
+                log.info("Failed to download new check")
                 self.__filename = None
                 
         self.result = self.__start()
@@ -86,10 +87,11 @@ class Check():
                 res = requests.get(downloadurl)
                 data = res.content
 
-                if not verify_file(res.content, filename, "certs/server_pub.crt"):
-                    logger.error("File signature could not be verified")
+                if not verify_file(res.content, filename, "certs/public.crt"):
+                    log.error("File signature could not be verified")
                     return False
-                
+                else:
+                    log.info(f"File signature of {filename} verified")
                 os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
             except requests.exceptions.ConnectionError:
                 log.error("Failed to download check from " + url)
