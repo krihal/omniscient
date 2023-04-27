@@ -57,14 +57,6 @@
 	    "check": "responsetimegoogle.sh",
 	    "args": "",
 	    "groups": ["sunet"]
-	},
-	"test7": {
-	    "name": "update",
-	    "retries": 3,
-	    "interval": 300,
-	    "check": "update.sh",
-	    "args": "",
-	    "groups": ["sunet"]
 	}
     }
 }
