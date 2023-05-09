@@ -1,0 +1,10 @@
+[Unit]
+Description=Starts and stops the Omniscient test client
+[Service]
+Type=forking
+User=omniscient
+RestartSec=60
+Restart=on-failure
+ExecStart=/home/omniscient/omniscient/worker.py -f
+[Install]
+WantedBy=multi-user.target
