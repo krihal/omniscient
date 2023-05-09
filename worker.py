@@ -40,13 +40,19 @@ def read_config(url):
 
     try:
         res = requests.get(url + "?uuid=" + my_uuid)
+    except Exception:
+        log.error("Could not reach endpoint " + url)
+        return config
 
+    try:
         if "data" in res.json():
             config = res.json()["data"]
         elif "error" in res.json():
             log.error("Configuration not found for client")
-    except requests.exceptions.ConnectionError:
-        log.error("Could not reach endpoint " + url)
+        else:
+            log.error("Unknown error when fetching configuration")
+    except Exception:
+        log.error("Failed to parse JSON from server")
 
     return config
 
@@ -57,7 +63,11 @@ def callhome(result):
         log.debug("Sent result to server:")
         indented = json.dumps(result, indent=4)
         log.debug("\n" + indented)
-        log.debug(f"Server responded with {res.status_code}")
+
+        if res.status_code != 200:
+            log.error(f"Server responded with {res.status_code}")
+        else:
+            log.debug("Server responded with 200 OK")
     except Exception as e:
         log.error(f"Failed to post result to {url}: {e}")
 
