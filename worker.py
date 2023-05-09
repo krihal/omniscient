@@ -1,12 +1,11 @@
+#!/usr/bin/env python3
+
 import getopt
 import getpass
-import hashlib
 import json
 import logging
 import os
 import signal
-import stat
-import subprocess
 import sys
 import time
 import uuid
@@ -17,7 +16,6 @@ from daemonize import Daemonize
 from omniscient import scheduler
 from omniscient.check import Check
 from omniscient.log import get_logger
-from omniscient.signher import verify_file
 
 log = get_logger()
 workers_scheduler = scheduler.Scheduler()
