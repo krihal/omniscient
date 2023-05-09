@@ -136,6 +136,14 @@ def main():
             time.sleep(5)
             continue
 
+        for item in old_config:
+            if "url" in item:
+                del item["url"]
+
+        for item in config:
+            if "url" in item:
+                del item["url"]
+
         if config != old_config:
             for test in config:
                 log.info("Scheduling test:")
