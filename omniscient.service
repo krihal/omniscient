@@ -1,10 +1,12 @@
 [Unit]
 Description=Starts and stops the Omniscient test client
+After=network.target
+StartLimitIntervalSec=0
 [Service]
-Type=forking
+Type=simple
 User=omniscient
-RestartSec=60
-Restart=on-failure
-ExecStart=/home/omniscient/omniscient/worker.py -f
+RestartSec=1
+Restart=always
+ExecStart=/home/omniscient/omniscient/worker.py -f -u https://marjory.sunet.se/probemaster
 [Install]
 WantedBy=multi-user.target
