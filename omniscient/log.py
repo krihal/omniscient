@@ -1,6 +1,9 @@
 import logging
 
-from flask import current_app
+try:
+    from flask import current_app
+except ImportError:
+    current_app = None
 
 
 def get_logger():
