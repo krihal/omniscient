@@ -15,7 +15,7 @@ log = get_logger()
 
 class JobError(Exception):
     def __init__(self, message):
-        print(message)
+        log.error(message)
 
 
 class Scheduler(object):
@@ -146,7 +146,16 @@ def test_job(**kwargs):
 
 if __name__ == "__main__":
     s = Scheduler()
-    s.add_job(test_job, "test_1", seconds=2, maxruns=20, apa=132)
+    s.add(test_job, "test_1", interval=2, maxruns=20, jobb="test_1")
+    s.add(test_job, "test_2", interval=2, maxruns=20, jobb="test_2")
+
+    s.start()
+
+    for job in s.get_jobs():
+        s.delete_job(job)
+
+    s.add(test_job, "test_1", interval=2, maxruns=20, jobb="test_1")
+    s.add(test_job, "test_2", interval=2, maxruns=20, jobb="test_2")
 
     while True:
         pass

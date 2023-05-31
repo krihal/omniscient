@@ -3,9 +3,11 @@ import sys
 
 from omniscient.signher import sign_file, verify_file
 
-if __name__ == "__main__":
+
+def main():
     if len(sys.argv) < 2:
-        print("Usage: python signer.py <op> <file_path> <cert_path> [<key_path>]")
+        print(
+            "Usage: python signer.py <op> <file_path> <cert_path> [<key_path>]")
         sys.exit(1)
 
     op = sys.argv[1]
@@ -30,3 +32,7 @@ if __name__ == "__main__":
 
     else:
         print("I have no idea what you want to do.")
+
+
+if __name__ == "__main__":
+    main()

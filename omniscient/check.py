@@ -12,6 +12,7 @@ from omniscient.signher import verify_file
 
 log = get_logger()
 
+
 class CheckError(Exception):
     pass
 
@@ -33,11 +34,6 @@ class Check():
 
         log.debug(f"Check filename: {self.__filename}")
 
-        if self.__filename is not None:
-            self.__process = [self.__filename]
-        else:
-            self.__process = []
-        self.__process.extend(config["args"].split(" "))
         self.__rhash = self.__get_remote_hash()
         self.__lhash = self.__get_hash()
 
@@ -51,6 +47,14 @@ class Check():
             else:
                 log.info("Failed to download new check")
                 self.__filename = None
+                self.__process = None
+
+        if self.__filename is not None:
+            self.__process = [self.__filename]
+        else:
+            self.__process = []
+
+        self.__process.extend(config["args"].split(" "))
 
         self.result = self.__start()
 
@@ -73,7 +77,6 @@ class Check():
         if not os.path.exists(check):
             try:
                 res = requests.get(downloadurl)
-                data = res.content
 
                 if not verify_file(res.content, filename, "certs/public.crt"):
                     log.error("File signature could not be verified")
@@ -82,14 +85,14 @@ class Check():
                     log.info(f"File signature of {filename} verified")
                 os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
             except requests.exceptions.ConnectionError:
-                log.error("Failed to download check from " + url)
+                log.error("Failed to download check from " + downloadurl)
             except Exception as e:
                 log.error("Failed to write new check: " + e)
 
         return True
 
     def __start(self):
-        if self.__process == []:
+        if self.__process == [] or self.__process == [''] or self.__process is None:
             raise CheckError("No process to run!")
 
         fail = True
