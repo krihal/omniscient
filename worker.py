@@ -19,6 +19,7 @@ from omniscient.log import get_logger
 
 log = get_logger()
 workers_scheduler = scheduler.Scheduler()
+
 config = {}
 url = ""
 
@@ -114,13 +115,12 @@ def start_checks(config):
         name = test["name"]
         test["url"] = url
 
+        print(f"Started check {name} with interval {interval}")
+
         log.debug(f"Starting new job {name} with interval {interval}")
 
         workers_scheduler.add(
             Check, name, interval=interval, maxruns=-1, config=test)
-
-        workers_scheduler.add_error_listener(check_error)
-        workers_scheduler.add_success_listener(check_success)
 
     workers_scheduler.start()
 
@@ -135,6 +135,9 @@ def main():
     old_config = {}
     endpoint = url + "/config"
     callhome_interval = 30
+
+    workers_scheduler.add_error_listener(check_error)
+    workers_scheduler.add_success_listener(check_success)
 
     while True:
         config = read_config(endpoint)
@@ -164,6 +167,7 @@ def main():
             log.info("Configuration change!")
             stop_checks()
             start_checks(config)
+
             old_config = config.copy()
 
         log.info(f"Will call home again in {callhome_interval} seconds")
