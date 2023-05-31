@@ -2,7 +2,6 @@ import hashlib
 import os
 import stat
 import subprocess
-import sys
 import time
 
 import requests
@@ -18,7 +17,7 @@ class CheckError(Exception):
 
 
 class Check():
-    def __init__(self, config):
+    def __init__(self, config: dict) -> None:
         self.__config = config
         self.__name = config["name"]
         self.__retries = config["retries"]
@@ -58,16 +57,28 @@ class Check():
 
         self.result = self.__start()
 
-    def __get_remote_hash(self):
+    def __get_remote_hash(self) -> str:
+        """
+        Get the hash of the remote check script.
+        """
+
         return self.__config["hash"]
 
-    def __get_hash(self):
+    def __get_hash(self) -> str:
+        """
+        Get the hash of the local check script.
+        """
+
         if not os.path.exists(self.__filename):
             return None
         with open(self.__filename, "rb") as fd:
             return hashlib.sha256(fd.read()).hexdigest()
 
-    def __download(self):
+    def __download(self) -> bool:
+        """
+        Download the check script from the server.
+        """
+
         check = [self.__config["check"]][0]
         filename = self.__scripts_path + check
         downloadurl = self.__config["url"] + "/checks/" + check
@@ -91,7 +102,11 @@ class Check():
 
         return True
 
-    def __start(self):
+    def __start(self) -> str:
+        """
+        Start the check process and return the result.
+        """
+
         if self.__process == [] or self.__process == [''] or self.__process is None:
             raise CheckError("No process to run!")
 

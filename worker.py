@@ -9,6 +9,7 @@ import signal
 import sys
 import time
 import uuid
+from typing import Optional
 
 import requests
 from daemonize import Daemonize
@@ -24,14 +25,22 @@ config = {}
 url = ""
 
 
-def get_uuid():
+def get_uuid() -> str:
+    """
+    Generate a UUID for this client
+    """
+
     username = getpass.getuser()
     node = hex(uuid.getnode())
     urn = 'urn:node:%s:user:%s' % (node, username)
     return str(uuid.uuid3(uuid.NAMESPACE_DNS, urn))
 
 
-def read_config(url):
+def read_config(url: str) -> dict:
+    """
+    Read configuration from server.
+    """
+
     config = {}
     my_uuid = get_uuid()
 
@@ -56,7 +65,11 @@ def read_config(url):
     return config
 
 
-def callhome(result):
+def callhome(result: dict) -> None:
+    """
+    Send result to server.
+    """
+
     try:
         res = requests.post(url + "/callhome?uuid=" + get_uuid(), json=result)
         log.debug("Sent result to server:")
@@ -71,7 +84,11 @@ def callhome(result):
         log.error(f"Failed to post result to {url}: {e}")
 
 
-def check_error(event):
+def check_error(event: scheduler.Event) -> None:
+    """
+    Send error to server.
+    """
+
     result = [{
         "measurement": event.job_id,
         "tags": {
@@ -85,7 +102,11 @@ def check_error(event):
     callhome(result)
 
 
-def check_success(event):
+def check_success(event: scheduler.Event) -> None:
+    """
+    Send result to server.
+    """
+
     resultdata = event.retval.result.decode().rstrip()
 
     try:
@@ -109,7 +130,11 @@ def check_success(event):
     callhome(result)
 
 
-def start_checks(config):
+def start_checks(config: dict) -> None:
+    """
+    Start all checks in configuration.
+    """
+
     for test in config:
         interval = test["interval"]
         name = test["name"]
@@ -125,13 +150,21 @@ def start_checks(config):
     workers_scheduler.start()
 
 
-def stop_checks():
+def stop_checks() -> None:
+    """
+    Stop all checks.
+    """
+
     for job in workers_scheduler.get_jobs():
         log.debug(f"Stopping job {job}")
         workers_scheduler.delete_job(job)
 
 
-def main():
+def main() -> None:
+    """
+    Main function.
+    """
+
     old_config = {}
     endpoint = url + "/config"
     callhome_interval = 30
@@ -175,7 +208,11 @@ def main():
         time.sleep(callhome_interval)
 
 
-def kill(pidfile):
+def kill(pidfile: str) -> None:
+    """
+    Kill daemon.
+    """
+
     try:
         with open(pidfile) as fd:
             pid = int(fd.read())
@@ -185,7 +222,11 @@ def kill(pidfile):
         log.error(f"Failed to kill daemon: {e}")
 
 
-def usage(err=""):
+def usage(err: Optional[str] = "") -> None:
+    """
+    Print usage.
+    """
+
     name = sys.argv[0]
 
     if err != "":

@@ -3,10 +3,12 @@ import sys
 from OpenSSL import crypto
 
 
-def ssl_sign_file(data, cert_path, key_path):
+def ssl_sign_file(data: str, cert_path: str, key_path: str) -> bytes:
+    """
+    Sign a file using OpenSSL.
+    """
+
     try:
-        cert = crypto.load_certificate(
-            crypto.FILETYPE_PEM, open(cert_path).read())
         key = crypto.load_privatekey(
             crypto.FILETYPE_PEM, open(key_path).read())
         signature = crypto.sign(key, data, 'sha256')
@@ -18,7 +20,11 @@ def ssl_sign_file(data, cert_path, key_path):
     return signature
 
 
-def sign_file(file_path, cert_path, key_path):
+def sign_file(file_path: str, cert_path: str, key_path: str) -> None:
+    """
+    Sign a file using OpenSSL.
+    """
+
     with open(file_path, "rb") as fd:
         lines = fd.read()
 
@@ -42,7 +48,11 @@ def sign_file(file_path, cert_path, key_path):
         fd.write(data.decode())
 
 
-def verify_file(data, file_path, cert_path):
+def verify_file(data: bytes, file_path: str, cert_path: str) -> bool:
+    """
+    Verify a file using OpenSSL.
+    """
+
     lines = data.split(b"\n")
 
     if len(lines) < 3:

@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+from typing import Optional
 
 from flask import Flask, jsonify, request
 from influxdb import InfluxDBClient
@@ -22,13 +23,21 @@ client = InfluxDBClient(host=INFLUX_HOST, port=INFLUX_PORT)
 client.switch_database(INFLUX_DB)
 
 
-def influx_write(result):
+def influx_write(result: list) -> bool:
+    """
+    Write data to influxdb.
+    """
+
     if client.write_points(result):
         return True
     return False
 
 
-def get_hash(filename):
+def get_hash(filename: str) -> str:
+    """
+    Get hash of check file.
+    """
+
     with open("checks/" + filename, "rb") as fd:
         data = fd.read()
 
@@ -43,13 +52,21 @@ def get_hash(filename):
     return hashlib.sha256(data.encode()).hexdigest()
 
 
-def get_config(filename="config.json"):
+def get_config(filename: Optional[str] = "config.json") -> dict:
+    """
+    Get config from file.
+    """
+
     with open(filename) as fd:
         config = json.load(fd)
     return config
 
 
-def get_groups(uuid, config):
+def get_groups(uuid: str, config: dict) -> list:
+    """
+    Get groups for uuid.
+    """
+
     found = []
     for group in config["groups"]:
         if uuid in config["groups"][group]:
@@ -60,7 +77,11 @@ def get_groups(uuid, config):
     return found
 
 
-def get_tests(uuid, config):
+def get_tests(uuid: str, config: dict) -> list:
+    """
+    Get tests for uuid.
+    """
+
     found = get_groups(uuid, config)
     tests = []
 
@@ -77,7 +98,11 @@ def get_tests(uuid, config):
     return tests
 
 
-def get_alias(uuid, config):
+def get_alias(uuid: str, config: dict) -> str:
+    """
+    Get alias for uuid.
+    """
+
     if "clients" not in config:
         return uuid
 
@@ -97,7 +122,11 @@ def get_alias(uuid, config):
 
 
 @app.route("/config", methods=["GET"])
-def config_get():
+def config_get() -> dict:
+    """
+    Get config.
+    """
+
     args = request.args
     config = get_config()
 
@@ -113,7 +142,11 @@ def config_get():
 
 
 @app.route("/callhome", methods=["POST"])
-def callhome_post():
+def callhome_post() -> dict:
+    """
+    Callhome.
+    """
+
     args = request.args
     config = get_config()
 

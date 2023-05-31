@@ -1,5 +1,6 @@
 import fcntl
 from datetime import datetime
+from typing import Callable, Optional
 
 import flock
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
@@ -19,7 +20,8 @@ class JobError(Exception):
 
 
 class Scheduler(object):
-    def __init__(self, nr_threads=100, lockfile="/tmp/scheduler.lock"):
+    def __init__(self, nr_threads: Optional[int] = 100,
+                 lockfile: Optional[str] = "/tmp/scheduler.lock") -> None:
         self.__scheduler = BackgroundScheduler(
             executors={"default": ThreadPoolExecutor(nr_threads)},
             jobstores={"default": MemoryJobStore()},
@@ -33,7 +35,11 @@ class Scheduler(object):
         self.jobstore = dict()
         self.jobs = []
 
-    def __lock(self):
+    def __lock(self) -> Optional[bool]:
+        """
+        Locks the scheduler to prevent multiple instances from running.
+        """
+
         try:
             self.lockfp = open(self.lockfile, "w")
             fcntl.lockf(self.lockfp, flock.LOCK_EX)
@@ -42,7 +48,11 @@ class Scheduler(object):
 
         return True
 
-    def __unlock(self):
+    def __unlock(self) -> bool:
+        """
+        Unlocks the scheduler.
+        """
+
         if self.lockfp.writable():
             try:
                 fcntl.lockf(self.lockfp, fcntl.LOCK_UN)
@@ -52,7 +62,11 @@ class Scheduler(object):
 
         return False
 
-    def __launcher(self, func, **kwargs):
+    def __launcher(self, func: Callable, **kwargs: dict) -> None:
+        """
+        Launches the function with the given arguments.
+        """
+
         job_id = kwargs["job_id"]
         retval = None
         self.jobstore[job_id]["nr_runs"] += 1
@@ -68,7 +82,11 @@ class Scheduler(object):
 
         return retval
 
-    def start(self):
+    def start(self) -> Optional[bool]:
+        """
+        Starts the scheduler.
+        """
+
         if not self.__lock():
             log.error("Could not acquire lock")
             return None
@@ -83,13 +101,25 @@ class Scheduler(object):
 
         return self.__scheduler.start()
 
-    def stop(self):
+    def stop(self) -> Optional[bool]:
+        """
+        Stops the scheduler.
+        """
+
         if self.started:
             self.started = False
         return self.__scheduler.shutdown()
 
-    def add(self, func, job_id="", comment="", timeout=120,
-            interval=60, maxruns=1, starttime=None, **kwargs):
+    def add(self, func: Callable, job_id: Optional[str] = "",
+            comment: Optional[str] = "",
+            timeout: Optional[int] = 120,
+            interval: Optional[int] = 60,
+            maxruns: Optional[int] = 1,
+            starttime: Optional[str] = None, **kwargs: dict) -> str:
+        """
+        Adds a job to the scheduler.
+        """
+
         log.info(f"Scheduling recurrent job {job_id}")
 
         if job_id == "":
@@ -122,18 +152,34 @@ class Scheduler(object):
 
         return job_id
 
-    def add_error_listener(self, func):
+    def add_error_listener(self, func: Callable) -> None:
+        """
+        Adds a listener for job errors.
+        """
+
         self.__scheduler.add_listener(func, EVENT_JOB_ERROR)
 
-    def add_success_listener(self, func):
+    def add_success_listener(self, func: Callable) -> None:
+        """
+        Adds a listener for job success.
+        """
+
         self.__scheduler.add_listener(func, EVENT_JOB_EXECUTED)
 
-    def delete_job(self, job_id):
+    def delete_job(self, job_id: str) -> None:
+        """
+        Deletes a job from the scheduler.
+        """
+
         self.__scheduler.remove_job(job_id)
         del self.jobstore[job_id]
         log.info(f"Job {job_id} removed from scheduler.")
 
-    def get_jobs(self):
+    def get_jobs(self) -> list:
+        """
+        Returns a list of jobs.
+        """
+
         jobs = list()
         for key in self.jobstore.keys():
             jobs.append(key)

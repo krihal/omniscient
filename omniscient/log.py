@@ -6,7 +6,12 @@ except ImportError:
     current_app = None
 
 
-def get_logger():
+def get_logger() -> logging.Logger:
+    """
+    Get the logger for the current flask app, or a default logger
+    if not available.
+    """
+
     if current_app:
         logger = current_app.logger
     else:
