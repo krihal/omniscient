@@ -12,6 +12,7 @@ import uuid
 from typing import Optional
 
 import requests
+from apscheduler.events import JobEvent
 from daemonize import Daemonize
 
 from omniscient import scheduler
@@ -44,12 +45,17 @@ def read_config(url: str) -> dict:
     config = {}
     my_uuid = get_uuid()
 
-    log.debug(f"Worker have UUID={my_uuid}")
+    log.debug(f"Worker have UUID {my_uuid}")
 
     try:
+        log.debug("Fetching configuration from " + url)
         res = requests.get(url + "?uuid=" + my_uuid)
     except Exception:
         log.error("Could not reach endpoint " + url)
+        return config
+
+    if res.status_code != 200:
+        log.error(f"Server responded with {res.status_code}")
         return config
 
     try:
@@ -84,7 +90,7 @@ def callhome(result: dict) -> None:
         log.error(f"Failed to post result to {url}: {e}")
 
 
-def check_error(event: scheduler.Event) -> None:
+def check_error(event: JobEvent) -> None:
     """
     Send error to server.
     """
@@ -102,7 +108,7 @@ def check_error(event: scheduler.Event) -> None:
     callhome(result)
 
 
-def check_success(event: scheduler.Event) -> None:
+def check_success(event: JobEvent) -> None:
     """
     Send result to server.
     """
