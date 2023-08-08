@@ -2,6 +2,7 @@ import hashlib
 import os
 import stat
 import subprocess
+import sys
 import time
 
 import requests
@@ -22,6 +23,7 @@ class Check():
         self.__name = config["name"]
         self.__retries = config["retries"]
         self.__scripts_path = "/tmp/scripts/"
+        self.__signed = False
 
         if not os.path.exists(self.__scripts_path):
             log.debug("Scripts directory missing, creating")
@@ -55,7 +57,8 @@ class Check():
 
         self.__process.extend(config["args"].split(" "))
 
-        self.result = self.__start()
+        if self.__process and self.__process != [] and self.__process != [''] and self.__signed:
+            self.result = self.__start()
 
     def __get_remote_hash(self) -> str:
         """
@@ -91,8 +94,13 @@ class Check():
 
                 if not verify_file(res.content, filename, "certs/public.crt"):
                     log.error("File signature could not be verified")
+                    self.__filename = None
+                    self.__process = None
+                    self.__signed = False
+
                     return False
                 else:
+                    self.__signed = True
                     log.info(f"File signature of {filename} verified")
                 os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
             except requests.exceptions.ConnectionError:

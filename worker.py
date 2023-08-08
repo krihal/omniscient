@@ -113,7 +113,10 @@ def check_success(event: JobEvent) -> None:
     Send result to server.
     """
 
-    resultdata = event.retval.result.decode().rstrip()
+    try:
+        resultdata = event.retval.result.decode().rstrip()
+    except AttributeError:
+        return
 
     try:
         float(resultdata)
