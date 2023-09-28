@@ -7,7 +7,7 @@ import time
 import requests
 
 from omniscient.log import get_logger
-from omniscient.signher import ssl_verify
+from omniscient.signher import ssl_verify, verify_file
 
 log = get_logger()
 
@@ -24,6 +24,8 @@ class Check():
         self.__scripts_path = "/tmp/scripts/"
         self.__signed = False
 
+        download = False
+
         if not os.path.exists(self.__scripts_path):
             log.debug("Scripts directory missing, creating")
             os.mkdir(self.__scripts_path)
@@ -37,11 +39,26 @@ class Check():
         self.__rhash = self.__get_remote_hash()
         self.__lhash = self.__get_hash()
 
-        if self.__lhash is None or self.__lhash != self.__rhash:
+        if self.__lhash != self.__rhash:
             log.info("File hash differ:")
             log.info(f"   local={self.__lhash}")
             log.info(f"   remote={self.__rhash}")
 
+            download = True
+
+        try:
+            if verify_file(self.__filename, self.__filename + ".sig", "certs/public.cert"):
+                log.info("File signature of " + self.__filename + " verified")
+                self.__signed = True
+        except Exception as e:
+            log.error("Failed to verify file signature: " + e)
+            self.__signed = False
+
+        if not self.__signed:
+            log.info("File not signed")
+            download = True
+
+        if download:
             if self.__download():
                 log.info("Downloaded new check")
             else:
@@ -58,6 +75,8 @@ class Check():
 
         if self.__process and self.__process != [] and self.__process != [''] and self.__signed:
             self.result = self.__start()
+        else:
+            log.error(f"Check {self.__name} not started")
 
     def __get_remote_hash(self) -> str:
         """
@@ -85,50 +104,36 @@ class Check():
         filename = self.__scripts_path + check
         downloadurl = self.__config["url"] + "/checks/" + check
 
-        log.info(f"Downloading script {filename}")
+        log.info(f"Downloading script {filename} from {downloadurl}")
+        try:
+            res = requests.get(downloadurl)
 
-        if not os.path.exists(check):
-            try:
-                res = requests.get(downloadurl)
-
-                if res.status_code != 200:
-                    log.error("Failed to download check from " + downloadurl)
-                    return False
-
-                file_content = res.content
-
-                res = requests.get(downloadurl + ".sig")
-
-                if res.status_code != 200:
-                    log.error(
-                        "Failed to download check signature from " + downloadurl + ".sig")
-                    return False
-
-                signature_content = res.content
-
-                if not ssl_verify(file_content, signature_content.decode(),
-                                  "certs/public.cert"):
-                    log.error("File signature could not be verified")
-                    self.__filename = None
-                    self.__process = None
-                    self.__signed = False
-
-                    return False
-                else:
-                    self.__signed = True
-                    log.info(f"File signature of {filename} verified")
-
-                    with open(filename, "wb") as fd:
-                        fd.write(file_content)
-
-                    with open(filename + ".sig", "wb") as fd:
-                        fd.write(signature_content)
-
-                os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            except requests.exceptions.ConnectionError:
+            if res.status_code != 200:
                 log.error("Failed to download check from " + downloadurl)
-            except Exception as e:
-                log.error("Failed to write new check: " + e)
+                return False
+
+            file_content = res.content
+
+            res = requests.get(downloadurl + ".sig")
+
+            if res.status_code != 200:
+                log.error(
+                    "Failed to download check signature from " + downloadurl + ".sig")
+                return False
+
+            signature_content = res.content
+
+            with open(filename, "wb") as fd:
+                fd.write(file_content)
+
+            with open(filename + ".sig", "wb") as fd:
+                fd.write(signature_content)
+
+            os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        except requests.exceptions.ConnectionError:
+            log.error("Failed to download check from " + downloadurl)
+        except Exception as e:
+            log.error("Failed to write new check: " + e)
 
         return True
 
@@ -142,6 +147,7 @@ class Check():
 
         fail = True
         for retry in range(self.__retries):
+            log.debug(f"Starting check {self.__name} (retry {retry})")
             res = subprocess.run(
                 self.__process, shell=False, capture_output=True)
             if res.returncode == 0:
@@ -150,6 +156,8 @@ class Check():
             time.sleep(3)
 
         if fail:
+            log.error(
+                f"Check {self.__name} failed after {self.__retries} retries: {res.stdout}, {res.stderr}")
             raise CheckError(
                 f"Check {self.__name} failed after {self.__retries} retries: {res.stdout}, {res.stderr}")
 
