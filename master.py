@@ -41,14 +41,6 @@ def get_hash(filename: str) -> str:
     with open("checks/" + filename, "rb") as fd:
         data = fd.read()
 
-    lines = data.split(b"\n")
-    if len(lines) > 3:
-        if lines[0].rstrip() == b"--- SIGNATURE START ---" and lines[2].rstrip() == b"--- SIGNATURE END ---":
-            lines = lines[3:]
-
-    data = b"\n".join(lines)
-    data = data.decode()
-
     return hashlib.sha256(data.encode()).hexdigest()
 
 
