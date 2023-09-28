@@ -3,78 +3,60 @@ import sys
 from OpenSSL import crypto
 
 
-def ssl_sign_file(data: str, cert_path: str, key_path: str) -> bytes:
-    """
-    Sign a file using OpenSSL.
-    """
+def ssl_sign(data: str, key_path: str) -> bytes:
+    with open(key_path, "r") as fd:
+        key = fd.read()
 
     try:
-        key = crypto.load_privatekey(
-            crypto.FILETYPE_PEM, open(key_path).read())
-        signature = crypto.sign(key, data, 'sha256')
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
+        signature = crypto.sign(key, data, "sha256")
     except crypto.Error as e:
-        print("Failed to sign file:")
-        print(e)
+        print(f"Failed to sign file: {e}")
         sys.exit(1)
 
     return signature
 
 
-def sign_file(file_path: str, cert_path: str, key_path: str) -> None:
+def ssl_verify(data: str, signature: str, cert_path: str) -> bool:
+    with open(cert_path, "r") as fd:
+        cert = fd.read()
+
+    try:
+        crypt = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
+        crypto.verify(crypt, bytes.fromhex(signature), data, "sha256")
+    except crypto.Error as e:
+        print(f"Failed to verify file: {e}")
+        return False
+
+    return True
+
+
+def sign_file(file_path: str, sign_path: str, key_path: str) -> None:
     """
     Sign a file using OpenSSL.
     """
+    with open(file_path, "r") as fd:
+        file_data = fd.read()
 
-    with open(file_path, "rb") as fd:
-        lines = fd.read()
+    signature = ssl_sign(file_data, key_path)
 
-    lines = lines.split(b"\n")
-
-    if len(lines) > 3:
-        if lines[0].rstrip() == b"--- SIGNATURE START ---" and lines[2].rstrip() == b"--- SIGNATURE END ---":
-            lines = lines[3:]
-
-    data = b"\n".join(lines)
-
-    signature = ssl_sign_file(data, cert_path, key_path)
-
-    lines.insert(0, b"--- SIGNATURE START ---\n")
-    lines.insert(1, signature.hex().encode() + b"\n")
-    lines.insert(2, b"--- SIGNATURE END ---\n")
-
-    data = b"\n".join(lines)
-
-    with open(file_path, "w") as fd:
-        fd.write(data.decode())
+    with open(sign_path, "w") as fd:
+        fd.write(signature.hex())
 
 
-def verify_file(data: bytes, file_path: str, cert_path: str) -> bool:
+def verify_file(file_path: str, sign_path: str, cert_path: str) -> bool:
     """
     Verify a file using OpenSSL.
     """
-
-    lines = data.split(b"\n")
-
-    if len(lines) < 3:
-        print("File is not signed")
-        return False
-
-    if lines[0] != b"--- SIGNATURE START ---" or lines[2] != b"--- SIGNATURE END ---":
-        print("File is not signed")
-        return False
-
-    signature = lines[1].strip().decode()
-    data = b"\n".join(lines[3:])
-
     try:
-        cert = crypto.load_certificate(
-            crypto.FILETYPE_PEM, open(cert_path).read())
-        crypto.verify(cert, bytes.fromhex(signature), data, 'sha256')
-    except crypto.Error as e:
-        print(f"Failed to verify file: {e}")
-        return None
+        with open(file_path, "rb") as fd:
+            file_data = fd.read()
 
-    with open(file_path, "w") as fd:
-        fd.write(data.decode())
+        with open(sign_path, "rb") as fd:
+            sign_data = fd.read()
+    except IOError as e:
+        print("Failed to read file: ")
+        print(e)
+        sys.exit(1)
 
-    return True
+    return ssl_verify(file_data, sign_data.decode(), cert_path)

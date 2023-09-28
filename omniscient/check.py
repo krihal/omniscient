@@ -2,13 +2,12 @@ import hashlib
 import os
 import stat
 import subprocess
-import sys
 import time
 
 import requests
 
 from omniscient.log import get_logger
-from omniscient.signher import verify_file
+from omniscient.signher import ssl_verify
 
 log = get_logger()
 
@@ -92,7 +91,23 @@ class Check():
             try:
                 res = requests.get(downloadurl)
 
-                if not verify_file(res.content, filename, "certs/public.crt"):
+                if res.status_code != 200:
+                    log.error("Failed to download check from " + downloadurl)
+                    return False
+
+                file_content = res.content
+
+                res = requests.get(downloadurl + ".sig")
+
+                if res.status_code != 200:
+                    log.error(
+                        "Failed to download check signature from " + downloadurl + ".sig")
+                    return False
+
+                signature_content = res.content
+
+                if not ssl_verify(file_content, signature_content.decode(),
+                                  "certs/public.cert"):
                     log.error("File signature could not be verified")
                     self.__filename = None
                     self.__process = None
@@ -102,6 +117,13 @@ class Check():
                 else:
                     self.__signed = True
                     log.info(f"File signature of {filename} verified")
+
+                    with open(filename, "wb") as fd:
+                        fd.write(file_content)
+
+                    with open(filename + ".sig", "wb") as fd:
+                        fd.write(signature_content)
+
                 os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
             except requests.exceptions.ConnectionError:
                 log.error("Failed to download check from " + downloadurl)

@@ -13,19 +13,20 @@ def main():
     op = sys.argv[1]
 
     if op == "sign":
-        if len(sys.argv) < 5:
-            print("Usage: python signer.py sign <file_path> <cert_path> <key_path>")
-            sys.exit(1)
-        sign_file(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif op == "verify":
         if len(sys.argv) < 4:
-            print("Usage: python signer.py verify <file_path> <cert_path>")
+            print("Usage: python signer.py sign <file_path> <key_path>")
             sys.exit(1)
 
-        with open(sys.argv[2], "rb") as f:
-            data = f.read()
+        sign_file(sys.argv[2], sys.argv[2] + ".sig", sys.argv[3])
 
-        if verify_file(data, "/dev/null", sys.argv[3]):
+        print(f"Signature written to {sys.argv[2]}.sig")
+
+    elif op == "verify":
+        if len(sys.argv) < 5:
+            print("Usage: python signer.py verify <file_path> <sign_path> <cert_path>")
+            sys.exit(1)
+
+        if verify_file(sys.argv[2], sys.argv[3], sys.argv[4]):
             print("Signature verified.")
         else:
             print("Signature verification failed.")
