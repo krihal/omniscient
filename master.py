@@ -41,7 +41,7 @@ def get_hash(filename: str) -> str:
     with open("checks/" + filename, "rb") as fd:
         data = fd.read()
 
-    return hashlib.sha256(data.encode()).hexdigest()
+    return hashlib.sha256(data).hexdigest()
 
 
 def get_config(filename: Optional[str] = "config.json") -> dict:
@@ -49,8 +49,12 @@ def get_config(filename: Optional[str] = "config.json") -> dict:
     Get config from file.
     """
 
-    with open(filename) as fd:
-        config = json.load(fd)
+    try:
+        with open(filename) as fd:
+            config = json.load(fd)
+    except Exception as e:
+        print(f"Error reading config file: {e}")
+        return {}
     return config
 
 
@@ -122,6 +126,9 @@ def config_get() -> dict:
     args = request.args
     config = get_config()
 
+    if config == {}:
+        return jsonify({"status": "error", "message": "Error reading config file"}), 500
+
     if "uuid" not in args:
         return jsonify({"status": "error", "message": "Missing argument uuid"}), 400
 
@@ -162,5 +169,5 @@ def callhome_post() -> dict:
     return jsonify({"status": "error"}, 400)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8080)
