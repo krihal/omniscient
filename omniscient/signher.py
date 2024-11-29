@@ -54,9 +54,7 @@ def verify_file(file_path: str, sign_path: str, cert_path: str) -> bool:
 
         with open(sign_path, "rb") as fd:
             sign_data = fd.read()
-    except IOError as e:
-        print("Failed to read file: ")
-        print(e)
-        sys.exit(1)
+    except Exception:
+        return None
 
     return ssl_verify(file_data, sign_data.decode(), cert_path)

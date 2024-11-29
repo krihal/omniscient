@@ -48,14 +48,14 @@ def read_config(url: str) -> dict:
     log.debug(f"Worker have UUID {my_uuid}")
 
     try:
-        log.debug("Fetching configuration from " + url)
+        log.debug("Fetching configuration from " + url + "?uuid=" + my_uuid)
         res = requests.get(url + "?uuid=" + my_uuid)
     except Exception:
         log.error("Could not reach endpoint " + url)
         return config
 
     if res.status_code != 200:
-        log.error(f"Server responded with {res.status_code}")
+        log.debug(f"Server responded with {res.status_code}:\n" + res.text)
         return config
 
     try:
