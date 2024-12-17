@@ -23,21 +23,8 @@ services:
      - GF_SECURITY_ADMIN_USER=admin
      - GF_SECURITY_ADMIN_PASSWORD=admin
      - GF_INSTALL_PLUGINS=
-   links:
-     - influxdb
    ports:
      - '3000:3000'
    volumes:
      - ./grafana:/var/lib/grafana
-
-  master:
-    build:
-      context: ./
-      dockerfile: ./docker-master/Dockerfile
-    depends_on:
-      - influxdb
-    environment:
-      - INFLUX_HOST=influxdb
-      - INFLUX_PORT=8086
-      - INFLUX_DB=testdb
     

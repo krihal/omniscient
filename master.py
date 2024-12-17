@@ -27,7 +27,6 @@ def influx_write(result: list) -> bool:
     """
     Write data to influxdb.
     """
-
     if client.write_points(result):
         return True
     return False
@@ -114,7 +113,7 @@ def get_alias(uuid: str, config: dict) -> str:
         if alias == "":
             return uuid
 
-    return uuid
+    return alias
 
 
 @app.route("/config", methods=["GET"])
@@ -161,7 +160,8 @@ def callhome_post() -> dict:
     results = request.get_json()
 
     for result in results:
-        result["tags"]["uuid"] = alias
+        result["tags"]["uuid"] = uuid
+        result["tags"]["alias"] = alias
 
     if influx_write(results):
         return jsonify({"status": "ok"})

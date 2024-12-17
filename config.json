@@ -1,6 +1,6 @@
 {
     "clients": {
-	"12fda09b-d54d-3d1c-9e1e-e54d4ac50a42": {
+	"36510998-025c-39e4-9c28-bcf467a0aa35": {
 	    "alias": "bar"
 	}
     },
@@ -41,22 +41,6 @@
 	    "check": "diskspace.sh",
 	    "args": "",
 	    "groups": ["sunet"]	
-	},
-	"test5": {
-	    "name": "reseponse time",
-	    "retries": 3,
-	    "interval": 30,
-	    "check": "responsetime.sh",
-	    "args": "",
-	    "groups": ["sunet"]
-	},
-	"test6": {
-	    "name": "reseponse time on google",
-	    "retries": 3,
-	    "interval": 30,
-	    "check": "responsetimegoogle.sh",
-	    "args": "",
-	    "groups": ["sunet"]
 	}
     }
 }
