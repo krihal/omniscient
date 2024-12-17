@@ -13,7 +13,6 @@ from typing import Optional
 
 import requests
 from apscheduler.events import JobEvent
-from daemonize import Daemonize
 
 from omniscient import scheduler
 from omniscient.check import Check
@@ -33,7 +32,8 @@ def get_uuid() -> str:
 
     username = getpass.getuser()
     node = hex(uuid.getnode())
-    urn = 'urn:node:%s:user:%s' % (node, username)
+    urn = f"urn:node:{node}:user:{username}"
+
     return str(uuid.uuid3(uuid.NAMESPACE_DNS, urn))
 
 
@@ -95,15 +95,13 @@ def check_error(event: JobEvent) -> None:
     Send error to server.
     """
 
-    result = [{
-        "measurement": event.job_id,
-        "tags": {
-            "uuid": get_uuid()
-        },
-        "fields": {
-            "success": False
+    result = [
+        {
+            "measurement": event.job_id,
+            "tags": {"uuid": get_uuid()},
+            "fields": {"success": False},
         }
-    }]
+    ]
 
     callhome(result)
 
@@ -125,16 +123,13 @@ def check_success(event: JobEvent) -> None:
     else:
         resultdata = float(resultdata)
 
-    result = [{
-        "measurement": event.job_id,
-        "tags": {
-            "uuid": get_uuid()
-        },
-        "fields": {
-            "success": True,
-            "result": resultdata
+    result = [
+        {
+            "measurement": event.job_id,
+            "tags": {"uuid": get_uuid()},
+            "fields": {"success": True, "result": resultdata},
         }
-    }]
+    ]
 
     callhome(result)
 
@@ -153,8 +148,7 @@ def start_checks(config: dict) -> None:
 
         log.debug(f"Starting new job {name} with interval {interval}")
 
-        workers_scheduler.add(
-            Check, name, interval=interval, maxruns=-1, config=test)
+        workers_scheduler.add(Check, name, interval=interval, maxruns=-1, config=test)
 
     workers_scheduler.start()
 
@@ -250,33 +244,21 @@ def usage(err: Optional[str] = "") -> None:
     print("  -U              Print UUID and quit")
     print("  -u              URL to server")
     print("  -d              Enable debug")
-    print("  -p <pidfile>    Path to pid file")
-    print("  -f              Stay in foreground")
-    print("  -z              Kill running instance")
 
     sys.exit(0)
 
 
 if __name__ == "__main__":
-    foreground = False
-    pidfile = "/tmp/worker.pid"
-
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "p:dfzu:hU")
+        opts, args = getopt.getopt(sys.argv[1:], "du:hU")
     except getopt.GetoptError as e:
         usage(err=e)
 
     for opt, arg in opts:
         if opt == "-d":
             log.setLevel(logging.DEBUG)
-        elif opt == "-p":
-            pidfile = arg
-        elif opt == "-f":
-            foreground = True
         elif opt == "-u":
             url = arg
-        elif opt == "-z":
-            kill(pidfile)
         elif opt == "-U":
             print(get_uuid())
             sys.exit(0)
@@ -288,12 +270,4 @@ if __name__ == "__main__":
     if "http" not in url:
         usage()
 
-    if foreground:
-        main()
-    else:
-        daemon = Daemonize(app=__name__, pid=pidfile, action=main,
-                           logger=log,
-                           foreground=foreground,
-                           verbose=True,
-                           chdir=os.getcwd())
-        daemon.start()
+    main()
