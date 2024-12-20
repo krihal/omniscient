@@ -6,6 +6,10 @@ from typing import Optional
 from flask import Flask, jsonify, request
 from influxdb import InfluxDBClient
 
+from omniscient.validate import config_validate
+
+config_validate()
+
 app = Flask(__name__, static_folder="checks")
 
 INFLUX_HOST = "localhost"

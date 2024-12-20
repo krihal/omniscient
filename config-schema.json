@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["clients", "groups", "tests"],
+  "properties": {
+    "clients": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$": {
+          "type": "object",
+          "required": ["alias"],
+          "properties": {
+            "alias": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "groups": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9_]+$": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9_]+$": {
+          "type": "object",
+          "required": ["name", "retries", "interval", "check", "args", "groups"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "retries": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "interval": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "check": {
+              "type": "string",
+              "pattern": "^.*\\.sh$"
+            },
+            "args": {
+              "type": "string"
+            },
+            "groups": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
